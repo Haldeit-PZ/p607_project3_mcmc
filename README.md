@@ -8,3 +8,4 @@ After package is installed, try the following for the simulation:
 ```
 simulateOscillator
 ```
+To proceed further into the simulation, simply close the current plot and the next ones should show up.
