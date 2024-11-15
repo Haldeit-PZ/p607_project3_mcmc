@@ -1,62 +1,84 @@
 import numpy as np
-from utils import binned_jackknife
+from utils import jackknife
 
-def get_corr_func(cfgs: np.ndarray):
+
+def get_mag(cfgs: np.ndarray):
     """
-    Calculate the connected two-point correlation function with errors
-    for symmetric lattices using a jackknife error estimation method.
+    Compute the mean and error of the magnetization.
 
     Parameters:
-    - cfgs: 3D array of lattice configurations (num_samples, N, N),
-            where num_samples is the number of MCMC samples
-            and N is the lattice size (assumed square lattice).
+    - cfgs: np.ndarray : Array of configurations for the scalar field.
 
     Returns:
-    - corr_func: 2D array where each row contains [distance, mean correlation, error].
+    - Tuple containing the mean and jackknife error of the magnetization.
     """
-    # Compute the square of the mean field value across all configurations
-    mag_sq = np.mean(cfgs) ** 2
-    corr_func = []
+    # Compute the mean magnetization across all dimensions except the first
+    axis = tuple([i + 1 for i in range(len(cfgs.shape) - 1)])
+    return jackknife(cfgs.mean(axis=axis))
 
-    # Define the axis to average over for correlations (all axes except the first)
+
+def get_abs_mag(cfgs: np.ndarray):
+    """
+    Compute the mean and error of the absolute magnetization.
+
+    Parameters:
+    - cfgs: np.ndarray : Array of configurations for the scalar field.
+
+    Returns:
+    - Tuple containing the mean and jackknife error of the absolute magnetization.
+    """
+    # Compute the mean absolute magnetization across all dimensions except the first
+    axis = tuple([i + 1 for i in range(len(cfgs.shape) - 1)])
+    return jackknife(np.abs(cfgs.mean(axis=axis)))
+
+
+def get_chi2(cfgs: np.ndarray):
+    """
+    Compute the mean and error of the susceptibility.
+
+    Parameters:
+    - cfgs: np.ndarray : Array of configurations for the scalar field.
+
+    Returns:
+    - Tuple containing the mean and jackknife error of the susceptibility.
+    """
+    # Volume of the lattice, used for normalization
+    V = np.prod(cfgs.shape[1:])
+    # Compute the mean magnetization across all dimensions except the first
+    axis = tuple([i + 1 for i in range(len(cfgs.shape) - 1)])
+    mags = cfgs.mean(axis=axis)
+    # Compute susceptibility as the variance of magnetization scaled by volume
+    return jackknife(V * (mags ** 2 - mags.mean() ** 2))
+
+
+def get_propagator(cfgs: np.ndarray):
+    """
+    Compute the propagator with jackknife errors for symmetric lattices.
+
+    Parameters:
+    - cfgs: np.ndarray : Array of configurations for the scalar field.
+
+    Returns:
+    - np.ndarray : Array with the distance, mean propagator, and error for each distance.
+    """
+    # Mean squared of the field to subtract the disconnected part
+    mag_sq = np.mean(cfgs) ** 2
+    propagator = []
+    # Axes for averaging over all except the configuration axis
     axis = tuple([i + 1 for i in range(len(cfgs.shape) - 1)])
 
-    # Loop over distances to compute correlation at each separation
-    for dist in range(1, cfgs.shape[1]):
-        # List to hold correlation values for each direction (x and t)
-        corrs = []
+    # Loop over distances to calculate the propagator
+    for i in range(1, cfgs.shape[1], 1):
+        props = []
 
-        # Loop over spatial and temporal directions to compute correlation
+        # Calculate the propagator in all spatial directions (mu)
         for mu in range(len(cfgs.shape) - 1):
-            # Shift the lattice by `dist` in direction `mu+1`, then multiply with original
-            corrs.append(np.mean(cfgs * np.roll(cfgs, dist, mu + 1), axis=axis))
+            # Roll configurations by distance `i` in direction `mu+1`
+            props.append(np.mean(cfgs * np.roll(cfgs, i, mu + 1), axis=axis))
 
-        # Average the correlation over directions and calculate the connected correlation
-        corrs = np.array(corrs).mean(axis=0)
-        corr_mean, corr_err = binned_jackknife(corrs - mag_sq, 1)
+        # Average propagators across directions and subtract disconnected part
+        props = np.array(props).mean(axis=0)
+        prop_mean, prop_err = jackknife(props - mag_sq)
+        propagator.append([i, prop_mean, prop_err])
 
-        # Append the distance, mean correlation, and error to results
-        corr_func.append([dist, corr_mean, corr_err])
-
-    return np.array(corr_func)
-
-
-def calculate_mean_field(cfgs, bin_size):
-    """
-    Calculate the average field value with jackknife binned error estimation.
-
-    Parameters:
-    - cfgs: 3D array of lattice configurations (num_samples, N, N)
-    - bin_size: Number of configurations per bin for jackknife resampling
-
-    Returns:
-    - avg_field: Mean field value across all configurations
-    - avg_error: Jackknife error estimate for the mean field value
-    """
-    # Compute the mean field value for each configuration
-    avg_field_values = np.mean(cfgs, axis=(1, 2))
-
-    # Perform jackknife error estimation on the mean field values
-    avg_field, avg_error = jackknife_binned(avg_field_values, bin_size)
-
-    return avg_field, avg_error
+    return np.array(propagator)
