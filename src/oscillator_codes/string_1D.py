@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+
 class String_1D:
     def __init__(self, N, m, ang_freq, separation=1, step_size=0.1):
         """
@@ -24,9 +25,8 @@ class String_1D:
         # the "N+1" node has position of the first node, the same node
         np.append(self.eq_pos, self.eq_pos[0])
 
-        # leave initial position as a copy  
+        # leave initial position as a copy
         self.curr_pos = self.eq_pos
-
 
     def total_action(self):
         """
@@ -39,16 +39,19 @@ class String_1D:
             S += a * 0.5 * ((self.curr_pos[i] - self.curr_pos[i - 1]) / a) ** 2
 
             # self oscillation term
-            S += 0.5 * self.ang_freq ** 2 * self.curr_pos[i] ** 2
+            S += 0.5 * self.ang_freq**2 * self.curr_pos[i] ** 2
         return S
-    
+
     def local_action(self, node):
         """
         get local action
             node -- node number, index + 1
         """
         a = self.separation
-        S = a * 0.5 * ((self.curr_pos[node + 1] - self.curr_pos[node]) / a) ** 2 + 0.5 * self.ang_freq ** 2 * self.curr_pos[node] ** 2
+        S = (
+            a * 0.5 * ((self.curr_pos[node + 1] - self.curr_pos[node]) / a) ** 2
+            + 0.5 * self.ang_freq**2 * self.curr_pos[node] ** 2
+        )
         return S
 
     def metropolis_step(self, neighbor_influence=0.5):
@@ -89,7 +92,6 @@ class String_1D:
         else:
             self.curr_pos[node] = curr_pos
             return False
-        
 
     def run_mcmc(self, num_iterations, burn_in_fraction=0.2):
         """
@@ -117,14 +119,14 @@ class String_1D:
                 samples.append(self.curr_pos.copy())
 
         acceptance_rate = acceptance_count / num_iterations
-        print(f'Acceptance Rate: {acceptance_rate:.2f}')
+        print(f"Acceptance Rate: {acceptance_rate:.2f}")
         return samples, action_list
-    
+
     def plot_ring(self):
         """
         Plots the 1D string as a circular ring of oscillators.
         """
-        radius = 1.0 
+        radius = 1.0
 
         angles = np.linspace(0, 2 * np.pi, self.N, endpoint=False)
 
@@ -136,10 +138,12 @@ class String_1D:
 
         # plotting
         fig, ax = plt.subplots(figsize=(6, 6))
-        ax.plot(np.append(x, x[0]), np.append(y_displaced, y_displaced[0]), 'b-', lw=2)  # Ring edges
-        ax.plot(x, y_displaced, 'ro')
+        ax.plot(
+            np.append(x, x[0]), np.append(y_displaced, y_displaced[0]), "b-", lw=2
+        )  # Ring edges
+        ax.plot(x, y_displaced, "ro")
 
-        ax.set_aspect('equal')
+        ax.set_aspect("equal")
         ax.set_xlim(-radius * 1.5, radius * 1.5)
         ax.set_ylim(-radius * 1.5, radius * 1.5)
 
@@ -147,5 +151,3 @@ class String_1D:
         ax.set_xlabel("X Position")
         ax.set_ylabel("Y Position")
         plt.show()
-
-
