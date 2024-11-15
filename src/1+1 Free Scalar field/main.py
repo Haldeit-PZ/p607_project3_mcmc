@@ -3,7 +3,7 @@ import copy
 from tqdm import tqdm
 import pylab as plt
 from lattice import Lattice
-from functions import *
+from observables import *
 from scipy.optimize import curve_fit
 
 # Lattice parameters
