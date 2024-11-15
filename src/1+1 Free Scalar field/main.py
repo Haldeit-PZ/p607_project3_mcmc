@@ -3,7 +3,7 @@ import copy
 from tqdm import tqdm
 import pylab as plt
 from lattice import Lattice
-from observables import *
+from functions import *
 from scipy.optimize import curve_fit
 
 # Lattice parameters
@@ -29,7 +29,7 @@ def run_simulation(N, d, k, lamb, thermalization_steps, recording_steps, save_in
     if use_emcee:
         print(f"Running simulation with emcee (k={k}, lambda={lamb})...\n")
         n_walkers = 1000
-        n_steps = 10000
+        n_steps = 1000
         cfgs = lattice.run_emcee(n_walkers=n_walkers, n_steps=n_steps)
 
         # Calculate magnetization for each configuration in emcee samples
