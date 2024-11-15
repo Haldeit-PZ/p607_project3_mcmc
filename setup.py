@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='box2D',
+    name='QFTOscillator',
     version='1.0.1',
     author='Luis Rufino, Haoyang Zhou',
     description="A Markov Chain, Monte-Carlo Simulation of 1D Harmonic Oscillator in Quantum Field Theory", 

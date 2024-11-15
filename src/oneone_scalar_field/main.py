@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-
 import numpy as np
 import copy
 from tqdm import tqdm
 import pylab as plt
-from oneone_scalar_field.lattice import Lattice
-from oneone_scalar_field.functions import *
-
+from lattice import Lattice
+from functions import *
+from scipy.optimize import curve_fit
 
 # Lattice parameters
 N = 16  # Number of lattice points in each dimension
