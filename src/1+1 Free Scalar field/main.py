@@ -18,8 +18,9 @@ recording_steps = int(1E6)  # Number of steps for recording (post-thermalization
 save_interval = 100  # Save configuration every N steps during recording
 
 # Choose sampling method
-use_emcee = True  # Set to True to use emcee, False for Metropolis
-
+use_emcee = False  # Set to True to use emcee, False for Metropolis
+# Set a global random seed
+np.random.seed(43)
 
 # Function to run a single simulation
 def run_simulation(N, d, k, lamb, thermalization_steps, recording_steps, save_interval, use_emcee=False):
@@ -67,10 +68,30 @@ def run_simulation(N, d, k, lamb, thermalization_steps, recording_steps, save_in
     return cfgs, magnetizations_thermalization, magnetizations_recording, acceptance_rate
 
 
+# Function to compute the autocorrelation function
+def autocorrelation(observable_series):
+    """
+    Compute the autocorrelation function of a given observable series.
+
+    Parameters:
+    - observable_series (np.ndarray): Array of observable values.
+
+    Returns:
+    - autocorr (np.ndarray): Autocorrelation values at each lag.
+    """
+    n = len(observable_series)
+    mean = np.mean(observable_series)
+    var = np.var(observable_series)
+
+    # Compute autocorrelation for each lag
+    autocorr = np.correlate(observable_series - mean, observable_series - mean, mode='full')[-n:]
+    autocorr /= var * np.arange(n, 0, -1)  # Normalize
+    return autocorr
+
+
 # Run the default simulation
-cfgs, magnetizations_thermalization, magnetizations_recording, acceptance_rate = run_simulation(
-    N, d, default_k, default_lambda, thermalization_steps, recording_steps, save_interval, use_emcee=use_emcee
-)
+cfgs, magnetizations_thermalization, magnetizations_recording, acceptance_rate = run_simulation(N, d, default_k, default_lambda,
+                                                                                                thermalization_steps, recording_steps, save_interval, use_emcee=use_emcee)
 
 if acceptance_rate is not None:
     print("\nAcceptance rate:", acceptance_rate)
@@ -85,6 +106,25 @@ print("|M| =", mag_abs_mean, "+/-", mag_abs_err)
 
 chi2_mean, chi2_err = get_chi2(cfgs)
 print("Chi^2 =", chi2_mean, "+/-", chi2_err)
+
+
+# Autocorrelation Calculation
+autocorr = autocorrelation(magnetizations_recording)
+
+# Estimate the autocorrelation length (tau_auto)
+tau_auto = np.argmax(autocorr < np.exp(-1))
+print(f"Estimated autocorrelation length (tau_auto): {tau_auto}")
+
+# Plot Autocorrelation Function
+plt.figure(figsize=(8, 6))
+plt.plot(autocorr, label="Autocorrelation of Magnetization")
+plt.axvline(tau_auto, color="red", linestyle="--", label=f"Autocorrelation length = {tau_auto}")
+plt.xlabel("Lag")
+plt.ylabel("Autocorrelation")
+plt.title("Autocorrelation Function of Magnetization")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # Magnetization Plot (During Thermalization) - Only applicable for Metropolis method
 if not use_emcee:
